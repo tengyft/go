@@ -7,6 +7,7 @@ package bytes
 //go:noescape
 
 // IndexByte returns the index of the first instance of c in s, or -1 if c is not present in s.
+// IndexByte返回c在s中第一次出现的位置，如果没有则返回-1
 func IndexByte(s []byte, c byte) int // ../runtime/asm_$GOARCH.s
 
 //go:noescape

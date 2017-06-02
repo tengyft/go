@@ -14,6 +14,12 @@ package unsafe
 // part of the unsafe package. It represents the type of an arbitrary Go expression.
 type ArbitraryType int
 
+// Pointer表示任意类型的指针。Pointer类型有四种独有的操作：
+//  - 任意类型的指针可以转换成Pointer。
+//  - Pointer能够转换成任意类型的指针。
+//  - uintptr能够转换成Pointer。
+//  - Pointer能够转换成uintptr。
+// Pointer允许程序绕过类型系统读写任意的内存。
 // Pointer represents a pointer to an arbitrary type. There are four special operations
 // available for type Pointer that are not available for other types:
 //	- A pointer value of any type can be converted to a Pointer.

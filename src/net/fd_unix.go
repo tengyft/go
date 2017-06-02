@@ -16,8 +16,10 @@ import (
 )
 
 // Network file descriptor.
+// 网络文件描述符。
 type netFD struct {
 	// locking/lifetime of sysfd + serialize access to Read and Write methods
+	// 用来串行化该netFD对应的sysfd的读、写操作。
 	fdmu fdMutex
 
 	// immutable until Close

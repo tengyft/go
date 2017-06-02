@@ -16,19 +16,21 @@ import (
 var ErrClosedPipe = errors.New("io: read/write on closed pipe")
 
 // A pipe is the shared pipe structure underlying PipeReader and PipeWriter.
+// pipe结构是PipeReader和PipeWriter底层共享的管道。
 type pipe struct {
-	rl    sync.Mutex // gates readers one at a time
-	wl    sync.Mutex // gates writers one at a time
-	l     sync.Mutex // protects remaining fields
-	data  []byte     // data remaining in pending write
-	rwait sync.Cond  // waiting reader
-	wwait sync.Cond  // waiting writer
-	rerr  error      // if reader closed, error to give writes
-	werr  error      // if writer closed, error to give reads
+	rl    sync.Mutex // gates readers one at a time 保证一次只有一个读
+	wl    sync.Mutex // gates writers one at a time 保证一次只有一个写
+	l     sync.Mutex // protects remaining fields 保护本结构中的其他字段，也保证了读与写不能同时进行，也就是说：读、写操作是序列化的，这保证了操作data不会引起并发错误
+	data  []byte     // data remaining in pending write 管道中的数据
+	rwait sync.Cond  // waiting reader 读等待
+	wwait sync.Cond  // waiting writer 写等待
+	rerr  error      // if reader closed, error to give writes 关闭读端，该错误会被Write方法返回
+	werr  error      // if writer closed, error to give reads 关闭写端，该错误会被Read方法返回
 }
 
 func (p *pipe) read(b []byte) (n int, err error) {
 	// One reader at a time.
+	// 序列化读操作，防止读操作之间的乱读
 	p.rl.Lock()
 	defer p.rl.Unlock()
 
@@ -36,19 +38,20 @@ func (p *pipe) read(b []byte) (n int, err error) {
 	defer p.l.Unlock()
 	for {
 		if p.rerr != nil {
-			return 0, ErrClosedPipe
+			return 0, ErrClosedPipe // 读端已经关闭
 		}
 		if p.data != nil {
-			break
+			break // 管道中有数据
 		}
 		if p.werr != nil {
-			return 0, p.werr
+			return 0, p.werr // 写端已经关闭
 		}
-		p.rwait.Wait()
+		p.rwait.Wait() // 等待管道中有数据，当Wait返回时，p.l被锁上，也就是说此时写端不能写数据了，当p.rwait.Wait()在等待时，p.l会被释放
 	}
-	n = copy(b, p.data)
-	p.data = p.data[n:]
+	n = copy(b, p.data) // 成功读取n个字节的数据到b中
+	p.data = p.data[n:] // 更新管道中的数据缓存区，将读取成功的数据排除
 	if len(p.data) == 0 {
+		// 管道中的数据被读完，将管道数据缓存区置空，并给写操作发信号
 		p.data = nil
 		p.wwait.Signal()
 	}
@@ -64,33 +67,38 @@ func (p *pipe) write(b []byte) (n int, err error) {
 	}
 
 	// One writer at a time.
+	// 序列化写操作，防止写操作之间的相互覆盖
 	p.wl.Lock()
 	defer p.wl.Unlock()
 
 	p.l.Lock()
 	defer p.l.Unlock()
 	if p.werr != nil {
+		// 写端已经关闭
 		err = ErrClosedPipe
 		return
 	}
 	p.data = b
-	p.rwait.Signal()
+	p.rwait.Signal() // 向读发信号，可以读了
 	for {
 		if p.data == nil {
+			// 说明写入管道中的数据已经被读取完了
 			break
 		}
 		if p.rerr != nil {
+			// 读端已经关闭
 			err = p.rerr
 			break
 		}
 		if p.werr != nil {
+			// 写端已经关闭
 			err = ErrClosedPipe
 			break
 		}
-		p.wwait.Wait()
+		p.wwait.Wait() // 等待管道中的数据被读取完毕，将会由pipe的read方法来唤醒
 	}
-	n = len(b) - len(p.data)
-	p.data = nil // in case of rerr or werr
+	n = len(b) - len(p.data) // 成功写入管道中的数据大小，至于为什么不是len(p.data)?原因是：管道可能被关闭了
+	p.data = nil             // in case of rerr or werr
 	return
 }
 
@@ -117,6 +125,7 @@ func (p *pipe) wclose(err error) {
 }
 
 // A PipeReader is the read half of a pipe.
+// 一个PipeReader是管道的读端。
 type PipeReader struct {
 	p *pipe
 }
@@ -144,6 +153,7 @@ func (r *PipeReader) CloseWithError(err error) error {
 }
 
 // A PipeWriter is the write half of a pipe.
+// 一个PipeWriter对象是管道的写端。
 type PipeWriter struct {
 	p *pipe
 }
@@ -190,8 +200,8 @@ func (w *PipeWriter) CloseWithError(err error) error {
 // the individual calls will be gated sequentially.
 func Pipe() (*PipeReader, *PipeWriter) {
 	p := new(pipe)
-	p.rwait.L = &p.l
-	p.wwait.L = &p.l
+	p.rwait.L = &p.l // 读条件变量的锁
+	p.wwait.L = &p.l // 写条件变量的锁，这样读写就可以同步了
 	r := &PipeReader{p}
 	w := &PipeWriter{p}
 	return r, w

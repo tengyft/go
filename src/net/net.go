@@ -165,10 +165,12 @@ type Conn interface {
 	SetWriteDeadline(t time.Time) error
 }
 
+// *conn实现了Conn接口。
 type conn struct {
 	fd *netFD
 }
 
+// ok用来检测c是否代表一个正常的网络连接。
 func (c *conn) ok() bool { return c != nil && c.fd != nil }
 
 // Implementation of the Conn interface.
@@ -176,7 +178,7 @@ func (c *conn) ok() bool { return c != nil && c.fd != nil }
 // Read implements the Conn Read method.
 func (c *conn) Read(b []byte) (int, error) {
 	if !c.ok() {
-		return 0, syscall.EINVAL
+		return 0, syscall.EINVAL // 如果c本身无效，则返回相应的错误。
 	}
 	n, err := c.fd.Read(b)
 	if err != nil && err != io.EOF {
