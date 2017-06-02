@@ -286,6 +286,8 @@ type stringWriter interface {
 // WriteString writes the contents of the string s to w, which accepts a slice of bytes.
 // If w implements a WriteString method, it is invoked directly.
 // Otherwise, w.Write is called exactly once.
+// WriteString将字符串s写入到w中。
+// 如果w实现了WriteString方法，那么会直接调用这个方法，否则，会调用w.Write方法。
 func WriteString(w Writer, s string) (n int, err error) {
 	if sw, ok := w.(stringWriter); ok {
 		return sw.WriteString(s)
@@ -442,6 +444,8 @@ func (l *LimitedReader) Read(p []byte) (n int, err error) {
 
 // NewSectionReader returns a SectionReader that reads from r
 // starting at offset off and stops with EOF after n bytes.
+// NewSectionReader返回一个*SectionReader。它从r的off处开始读取内容，并且读取n个
+// 字节会以EOF返回。
 func NewSectionReader(r ReaderAt, off int64, n int64) *SectionReader {
 	return &SectionReader{r, off, off, off + n}
 }

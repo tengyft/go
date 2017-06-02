@@ -340,6 +340,7 @@ func RuneLen(r rune) int {
 
 // EncodeRune writes into p (which must be large enough) the UTF-8 encoding of the rune.
 // It returns the number of bytes written.
+// EncodeRune将r的UTF-8编码写入的p中，返回r的长度。
 func EncodeRune(p []byte, r rune) int {
 	// Negative values are erroneous. Making it unsigned addresses the problem.
 	switch i := uint32(r); {

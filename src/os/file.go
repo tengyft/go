@@ -234,6 +234,9 @@ func Chdir(dir string) error {
 // the returned file can be used for reading; the associated file
 // descriptor has mode O_RDONLY.
 // If there is an error, it will be of type *PathError.
+// Open函数将以name命名的文件打开以便读取。如果成功执行，则返回的*File的方法可以用来读取内容。
+// 与*File相关联的文件描述符是以O_RDONLY打开的。
+// 如果执行过程出错，则错误类型为*PathError。
 func Open(name string) (*File, error) {
 	return OpenFile(name, O_RDONLY, 0)
 }

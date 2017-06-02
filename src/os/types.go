@@ -65,6 +65,7 @@ func (m FileMode) String() string {
 	const str = "dalTLDpSugct"
 	var buf [32]byte // Mode is uint32.
 	w := 0
+	// 检测除Unix权限之外的其它权限
 	for i, c := range str {
 		if m&(1<<uint(32-1-i)) != 0 {
 			buf[w] = byte(c)
@@ -75,6 +76,7 @@ func (m FileMode) String() string {
 		buf[w] = '-'
 		w++
 	}
+	// 检测Unix权限
 	const rwx = "rwxrwxrwx"
 	for i, c := range rwx {
 		if m&(1<<uint(9-1-i)) != 0 {
@@ -89,17 +91,20 @@ func (m FileMode) String() string {
 
 // IsDir reports whether m describes a directory.
 // That is, it tests for the ModeDir bit being set in m.
+// IsDir用于检测m是否打开了ModeDir，也就是说，有没有目录权限
 func (m FileMode) IsDir() bool {
 	return m&ModeDir != 0
 }
 
 // IsRegular reports whether m describes a regular file.
 // That is, it tests that no mode type bits are set.
+// IsRegular用于检测m是否是普通文件权限
 func (m FileMode) IsRegular() bool {
 	return m&ModeType == 0
 }
 
 // Perm returns the Unix permission bits in m.
+// Perm返回Unix权限
 func (m FileMode) Perm() FileMode {
 	return m & ModePerm
 }
@@ -113,6 +118,10 @@ func (fs *fileStat) IsDir() bool  { return fs.Mode().IsDir() }
 // the decision may be based on the path names.
 // SameFile only applies to results returned by this package's Stat.
 // It returns false in other cases.
+// SameFile返回fi1和fi2是否描述的同一个文件。
+// 例如：在类Unix系统中，这意味着这两个文件的底层数据结构中的device域和inode域完全一样；而在其他系统中
+// 这两个的文件的比较可能基于路径名。
+// SameFile仅能用于本包中的Stat函数返回的结果上，在其他情况中使用SameFile会返回错误。
 func SameFile(fi1, fi2 FileInfo) bool {
 	fs1, ok1 := fi1.(*fileStat)
 	fs2, ok2 := fi2.(*fileStat)

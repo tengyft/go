@@ -82,6 +82,7 @@ func ResolveTCPAddr(network, address string) (*TCPAddr, error) {
 
 // TCPConn is an implementation of the Conn interface for TCP network
 // connections.
+// TCPConn实现了Conn接口，TCPConn用于TCP连接。
 type TCPConn struct {
 	conn
 }

@@ -102,6 +102,19 @@ func Ignore(sig ...os.Signal) {
 // It is allowed to call Notify multiple times with different channels
 // and the same signals: each channel receives copies of incoming
 // signals independently.
+//
+// Notify会使signal包将到来的信号转发到通道c。
+// 如果没有提供需要转发的信号，则所有到来的信号都会被转发到通道c中。
+// sig不为空的话，就是要Notify函数监听提供的信号。
+//
+// signal包在向通道c中转发信号时，不会在通道c上阻塞：这意味着，调用者必须确保通道c
+// 有足够的缓存空间来跟上信号到来的速率。对于仅有一个信号需要通知的通道来说，大小为1的缓存是足够的。
+//
+// 可以使用相同的通道c来调用Notify多次：每次调用都会扩充会转发到通道c中的信号集。
+// 唯一可以从转发到通道c中的信号集中移除信号的方式就是调用Stop函数。
+// 并且目前来看Stop函数会一次性将信号集全部移除。
+//
+// 用户也可以以不同的通道、相同的信号来调用Notify多次：每个通道都会分别收到到来的信号的拷贝。
 func Notify(c chan<- os.Signal, sig ...os.Signal) {
 	if c == nil {
 		panic("os/signal: Notify using nil channel")
@@ -153,6 +166,9 @@ func Reset(sig ...os.Signal) {
 // Stop causes package signal to stop relaying incoming signals to c.
 // It undoes the effect of all prior calls to Notify using c.
 // When Stop returns, it is guaranteed that c will receive no more signals.
+// Stop函数会使signal包停止向通道c转发到来的信号。
+// Stop函数会撤消之前的Notify调用(通道参数应该是一样的)。
+// 当Stop函数返回后，Go保证通道c不会再收到信号。
 func Stop(c chan<- os.Signal) {
 	handlers.Lock()
 

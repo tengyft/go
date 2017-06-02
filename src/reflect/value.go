@@ -33,12 +33,29 @@ const ptrSize = 4 << (^uintptr(0) >> 63) // unsafe.Sizeof(uintptr(0)) but an ide
 // To compare two Values, compare the results of the Interface method.
 // Using == on two Values does not compare the underlying values
 // they represent.
+// Value是一个Go value的反射接口。
+//
+// 并非所有的Value方法都可以应用到所有种类的value上。也就是说，有的Value方法只针对特定种类的value。
+// 如果存在限制的话，文档已经对每种方法做了相应的说明。在调用特定种类方法之前应该使用Kind方法来检测此
+// value是哪一种类。如果调用特定种类方法时，此value的种类不匹配，则会引发一个运行时panic。
+//
+// Value的零值表示没有value。
+// 针对Value的零值，IsValid方法会返回false，Kind方法返回Invalid，String方法返回"<invalid Value>"，
+// 除了这三个方法外，其他所有方法都会panic。大多数函数和方法永不返回一个无效的值。
+// 如果确实返回了一个无效的值，则此函数或方法的文档会显式地标明。
+//
+// 一个Value可以被多个Goroutine并发的使用，只要底层的Go value可能被同样形式地、并发地使用。
+//
+// 针对两个Value值使用==并不会比较它们所代表的底层Go value，而是会比较这两个Value结构的值。
+// 为了比较底层数据，应该比较Interface方法返回的值。
 type Value struct {
 	// typ holds the type of the value represented by a Value.
+	// typ用来保持底层数据结构的类型。
 	typ *rtype
 
 	// Pointer-valued data or, if flagIndir is set, pointer to data.
 	// Valid when either flagIndir is set or typ.pointers() is true.
+	// ptr仅在falgIndir设置或typ.pointers()返回true的情况下有效。
 	ptr unsafe.Pointer
 
 	// flag holds metadata about the value.
@@ -76,6 +93,8 @@ const (
 	flagRO          flag = flagStickyRO | flagEmbedRO
 )
 
+// 返回Value表示的种类
+// f的最低5位表示值的种类
 func (f flag) kind() Kind {
 	return Kind(f & flagKindMask)
 }

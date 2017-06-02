@@ -49,6 +49,7 @@ func NewCond(l Locker) *Cond {
 //    ... make use of condition ...
 //    c.L.Unlock()
 //
+// Wait方法返回后，会加锁条件变量中的锁，但是不能假定Wait返回时条件就已经满足
 func (c *Cond) Wait() {
 	c.checker.check()
 	t := runtime_notifyListAdd(&c.notify)

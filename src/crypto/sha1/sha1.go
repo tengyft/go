@@ -18,10 +18,10 @@ func init() {
 }
 
 // The size of a SHA-1 checksum in bytes.
-const Size = 20
+const Size = 20 // sha1计算值大小共160位
 
 // The blocksize of SHA-1 in bytes.
-const BlockSize = 64
+const BlockSize = 64 // 一个块大小共512位
 
 const (
 	chunk = 64
